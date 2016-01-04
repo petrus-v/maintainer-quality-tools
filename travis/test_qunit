@@ -1,0 +1,83 @@
+#!/usr/bin/env python
+import os
+import subprocess
+import sys
+
+from test_server import get_server_path, get_addons_path, get_addons_to_check
+from test_server import get_test_dependencies, setup_server
+
+
+def main(argv=None):
+    if argv is None:
+        argv = sys.argv
+
+    travis_home = os.environ.get("HOME", "~/")
+    travis_dependencies_dir = os.path.join(travis_home, 'dependencies')
+    travis_build_dir = os.environ.get("TRAVIS_BUILD_DIR", "../..")
+    odoo_version = os.environ.get("VERSION")
+    odoo_exclude = os.environ.get("EXCLUDE")
+    odoo_include = os.environ.get("INCLUDE")
+    if not odoo_version:
+        # For backward compatibility, take version from parameter
+        # if it's not globally set
+        odoo_version = argv[1]
+        print("WARNING: no env variable set for VERSION. "
+              "Using '%s'" % odoo_version)
+
+    odoo_full = os.environ.get("ODOO_REPO", "odoo/odoo")
+    server_path = get_server_path(odoo_full, odoo_version, travis_home)
+    addons_path = get_addons_path(travis_dependencies_dir,
+                                  travis_build_dir,
+                                  server_path)
+    tested_addons_list = get_addons_to_check(travis_build_dir,
+                                             odoo_include,
+                                             odoo_exclude)
+    tested_addons = ','.join(tested_addons_list)
+
+    print("Working in %s" % travis_build_dir)
+    print("Using repo %s and addons path %s" % (odoo_full, addons_path))
+
+    if not tested_addons:
+        print("WARNING!\nNothing to test- exiting early.")
+        return 0
+    else:
+        print("Modules to test: %s" % tested_addons)
+    # setup the base module without running the tests
+    dbtemplate = "openerp_template"
+    preinstall_modules = get_test_dependencies(addons_path,
+                                               tested_addons_list)
+    print("Modules to preinstall: %s" % preinstall_modules)
+    setup_server(dbtemplate, True, tested_addons, server_path,
+                 addons_path, [], preinstall_modules)
+
+    database = 'qunit_test'
+    if not subprocess.call(["createdb", "-T", dbtemplate, database]):
+        print("Error!\nError while install dependences- exiting early.")
+        return 1
+
+    print("Modules to install: %s" % tested_addons)
+    cmd_odoo_install = ["%s/openerp-server" % server_path,
+                        "-d", database,
+                        "--stop-after-init",
+                        "--log-level=warn",
+                        "--addons-path", addons_path,
+                        "-i", tested_addons]
+    print("cmd\n%s" % " ".join(cmd_odoo_install))
+    if not subprocess.call(cmd_odoo_install):
+        print("Error!\nError while install tested addons- exiting early.")
+        return 1
+
+    cmd_run_odoo = ["%s/openerp-server" % server_path,
+                    "-d", database,
+                    "--log-level=warn",
+                    "--addons-path", addons_path,
+                    "--db-filter=^%s$" % database]
+    print("run odoo:\n%s" % " ".join(cmd_run_odoo))
+    popen = subprocess.Popen(cmd_run_odoo)
+    print("run soq:\n%s" % " ".join(cmd_run_odoo))
+    soq_cmd = ["soq", "--odoo-qunit-base-url", "http://172.17.42.1:8069",
+               "--odoo-qunit-odoo-version", odoo_version,
+               "--odoo-qunit-modules", tested_addons]
+    result = subprocess.call(soq_cmd)
+    popen.terminate()
+    return result
