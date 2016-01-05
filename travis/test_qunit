@@ -81,3 +81,6 @@ def main(argv=None):
     result = subprocess.call(soq_cmd)
     popen.terminate()
     return result
+
+if __name__ == '__main__':
+    exit(main())
