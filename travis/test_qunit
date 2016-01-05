@@ -51,7 +51,7 @@ def main(argv=None):
                  addons_path, [], preinstall_modules)
 
     database = 'qunit_test'
-    if not subprocess.call(["createdb", "-T", dbtemplate, database]):
+    if subprocess.call(["createdb", "-T", dbtemplate, database]):
         print("Error!\nError while install dependences- exiting early.")
         return 1
 
@@ -63,7 +63,7 @@ def main(argv=None):
                         "--addons-path", addons_path,
                         "-i", tested_addons]
     print("cmd\n%s" % " ".join(cmd_odoo_install))
-    if not subprocess.call(cmd_odoo_install):
+    if subprocess.call(cmd_odoo_install):
         print("Error!\nError while install tested addons- exiting early.")
         return 1
 
