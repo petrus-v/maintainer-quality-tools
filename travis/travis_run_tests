@@ -75,7 +75,7 @@ if __name__ == '__main__':
         tests.append(['travis_transifex.py'])
 
     if qunit_tests_enabled:
-        tests.append(['test_qunit.py'])
+        tests.append(['test_qunit'])
 
     if tests:
         exit(main(tests))
