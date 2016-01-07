@@ -82,7 +82,7 @@ def main(argv=None):
                "--odoo-qunit-odoo-version", odoo_version,
                "--odoo-qunit-modules", tested_addons,
                "--selenium-config", selenium_config_file,
-               "--processes", 4, "--process-timeout", 120]
+               "--processes", "4", "--process-timeout", "120"]
     print("run soq:\n%s" % " ".join(soq_cmd))
     result = subprocess.call(soq_cmd)
     popen.terminate()
