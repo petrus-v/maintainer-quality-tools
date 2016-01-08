@@ -19,6 +19,8 @@ def main(argv=None):
     odoo_include = os.environ.get("INCLUDE")
     selenium_config_file = os.environ.get("SELENIUM_CAPABILITIES",
                                           "selenium.json")
+    soq_logging_file = os.path.join(travis_home, "/maintainer-quality-tools/",
+                                    "travis/test_qunit_logging.conf")
     if not odoo_version:
         # For backward compatibility, take version from parameter
         # if it's not globally set
@@ -83,7 +85,7 @@ def main(argv=None):
                "--odoo-qunit-modules", tested_addons,
                "--selenium-config", selenium_config_file,
                "--processes", "4", "--process-timeout", "120",
-               "-v", "--log-config", "test_qunit_logging.conf"]
+               "-v", "--log-config", soq_logging_file]
     print("run soq:\n%s" % " ".join(soq_cmd))
     result = subprocess.call(soq_cmd)
     popen.terminate()
